@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>2倍法シミュレーター — 小数を2進数にする｜情報Ⅰ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+JP:wght@400;500;700&family=Zen+Kaku+Gothic+New:wght@700;900&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+:root{
+  --paper:#EDEFEA;
+  --card:#F9FAF6;
+  --ink:#101B18;
+  --ink2:#4B5954;
+  --muted:#7E8B85;
+  --rule:#CDD4CA;
+  --rule-soft:#DFE4DC;
+  --green:#0D5B4C;
+  --green-deep:#0A4438;
+  --green-soft:#DCE7E0;
+  --amber:#A5670F;
+  --amber-soft:#F0E4CB;
+  --mono:"IBM Plex Mono",ui-monospace,monospace;
+  --sans:"Noto Sans JP",system-ui,sans-serif;
+  --disp:"Zen Kaku Gothic New","Noto Sans JP",sans-serif;
+}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;background:var(--paper);color:var(--ink);
+  font-family:var(--sans);font-size:16px;line-height:1.75;
+  font-feature-settings:"palt" 1;
+}
+.wrap{max-width:1040px;margin:0 auto;padding:0 clamp(16px,4.2vw,52px) 92px}
+
+/* ---------- masthead ---------- */
+.masthead{padding:clamp(28px,5vw,52px) 0 clamp(18px,3vw,28px)}
+.mast-top{display:flex;align-items:baseline;justify-content:space-between;gap:1rem;
+  border-bottom:1px solid var(--ink);padding-bottom:.6rem;margin-bottom:clamp(18px,3vw,30px)}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.2em;color:var(--ink);text-transform:uppercase}
+.mast-top .tag{font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--muted)}
+h1{font-family:var(--disp);font-weight:900;font-size:clamp(28px,4.4vw,44px);line-height:1.28;
+  letter-spacing:.01em;margin:0 0 .7rem}
+h1 .mark{background:linear-gradient(transparent 62%,var(--green-soft) 62%);padding:0 .1em}
+.lede{max-width:60ch;color:var(--ink2);font-size:15px;line-height:1.95;margin:0}
+
+/* ---------- cards ---------- */
+.panel{background:var(--card);border:1px solid var(--rule);border-radius:2px}
+
+/* ---------- input ---------- */
+.input-panel{padding:clamp(16px,2.4vw,24px);display:flex;flex-wrap:wrap;gap:clamp(14px,2.4vw,28px);
+  align-items:flex-end;margin-bottom:14px}
+.field{display:flex;flex-direction:column;gap:.45rem}
+.field-label{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--muted)}
+.value-field{display:flex;align-items:center;border:1px solid var(--ink);border-radius:2px;
+  background:#fff;padding:.15rem .7rem .15rem .8rem;box-shadow:2px 2px 0 var(--green-soft)}
+.value-field .dec{font-family:var(--mono);font-size:1.6rem;font-weight:500;color:var(--ink);line-height:1.2}
+#digits{font-family:var(--mono);font-size:1.6rem;font-weight:600;line-height:1.2;color:var(--green-deep);
+  border:0;outline:0;background:transparent;width:9ch;padding:.1rem 0;letter-spacing:.06em}
+#digits::placeholder{color:var(--rule)}
+.field-sub{display:flex;flex-wrap:wrap;gap:.4rem;align-items:center;margin-top:.1rem}
+.presets{display:flex;flex-wrap:wrap;gap:.35rem;align-items:center}
+.presets .lb{font-family:var(--mono);font-size:11px;color:var(--muted);margin-right:.15rem}
+.chip{font-family:var(--mono);font-size:12px;padding:.22rem .5rem;border:1px solid var(--rule);
+  border-radius:2px;background:transparent;color:var(--ink2);cursor:pointer;transition:.15s}
+.chip:hover{border-color:var(--green);color:var(--green);background:var(--green-soft)}
+select{font-family:var(--mono);font-size:13px;padding:.42rem .5rem;border:1px solid var(--rule);
+  border-radius:2px;background:#fff;color:var(--ink);cursor:pointer}
+.err{flex-basis:100%;margin:0;font-size:13px;color:#8A2B14;background:var(--amber-soft);
+  border-left:3px solid var(--amber);padding:.5rem .7rem;display:none}
+.err.show{display:block}
+
+/* ---------- section titles ---------- */
+.sec-title{display:flex;align-items:center;gap:.6rem;margin:0 0 .9rem;
+  font-family:var(--disp);font-weight:700;font-size:15px;letter-spacing:.04em}
+.sec-title::before{content:"";width:4px;height:1.05em;background:var(--green);display:block}
+.sec-title .aside{margin-left:auto;font-family:var(--mono);font-size:11px;font-weight:400;
+  letter-spacing:.06em;color:var(--muted)}
+
+/* ---------- tape ---------- */
+.stage{margin-bottom:clamp(26px,4vw,38px)}
+.tape{position:relative;background:#fff;border:1px solid var(--ink);border-radius:2px;
+  padding:1.15rem 1.3rem 1.1rem;display:flex;align-items:flex-start;gap:1rem;
+  overflow-x:auto;box-shadow:3px 3px 0 var(--green-soft)}
+.tape-lead{display:flex;align-items:center;height:2.9rem;font-family:var(--mono);font-size:1.55rem;
+  font-weight:600;color:var(--ink);flex:0 0 auto;letter-spacing:.02em}
+.bits{list-style:none;display:flex;flex-wrap:wrap;gap:.34rem;margin:0;padding:0}
+.cell{width:2.62rem;display:flex;flex-direction:column;align-items:center;gap:.4rem}
+.cell .box{width:2.62rem;height:2.9rem;border:1px solid var(--rule);border-radius:2px;
+  display:grid;place-items:center;font-family:var(--mono);font-size:1.2rem;font-weight:600;
+  color:#fff;background:#fff;opacity:0;transform:translateY(5px);transition:opacity .34s ease,transform .34s ease,background .2s}
+.cell.shown .box{opacity:1;transform:none}
+.cell.on .box{background:var(--green);border-color:var(--green-deep)}
+.cell.off .box{background:#fff;border-color:var(--rule);color:var(--ink);box-shadow:inset 0 -2px 0 var(--rule-soft)}
+.cell.cyc .box{outline:2px solid var(--amber);outline-offset:-1px;border-radius:2px}
+.cell.empty .box,.cell.empty .w{opacity:.45}
+.cell.empty .box{border-style:dashed;background:transparent}
+.cell .w{font-family:var(--mono);font-size:10px;line-height:1;color:var(--muted);letter-spacing:-.02em;
+  opacity:0;transition:opacity .34s}
+.cell.shown .w{opacity:1}
+.cell.cyc .w{color:var(--amber);font-weight:600}
+.cell.rep .box{border:1px dashed var(--green);background:transparent;color:var(--green);box-shadow:none}
+.cell.rep.shown .box{opacity:.55}
+.cell.rep .w{color:var(--muted)}
+.cell.rep.shown .w{opacity:.7}
+.tape-note{margin:.7rem 0 0;font-size:12px;color:var(--muted);font-family:var(--sans)}
+
+/* 気づきの一言 */
+.aha{display:flex;gap:.65rem;align-items:flex-start;margin:.8rem 0 0;padding:.65rem .85rem;
+  background:var(--amber-soft);border-left:4px solid var(--amber);border-radius:2px;
+  opacity:0;transform:translateY(-5px);transition:opacity .45s ease,transform .45s ease}
+.aha[hidden]{display:none}
+.aha.in{opacity:1;transform:none}
+.aha-tag{flex:0 0 auto;margin-top:2px;font-family:var(--mono);font-size:10px;letter-spacing:.16em;
+  background:var(--amber);color:#fff;padding:.15rem .4rem;border-radius:2px}
+.aha-text{margin:0;font-size:14px;line-height:1.65;color:#4A2F06;font-weight:500}
+.aha-text b{color:#2E1C03;font-weight:700}
+.aha-text .grp{font-family:var(--mono);font-size:1.08em;font-weight:600;letter-spacing:.14em;
+  background:#fff;border:1px solid var(--amber);border-radius:2px;padding:0 .3em;margin:0 .12em}
+.aha-text .arrow{color:var(--amber);font-weight:700;padding:0 .2em}
+.cell.flash .box{animation:flashPulse .95s ease}
+@keyframes flashPulse{
+  0%{box-shadow:0 0 0 0 rgba(165,103,15,.45)}
+  40%{box-shadow:0 0 0 5px rgba(165,103,15,.22)}
+  100%{box-shadow:0 0 0 0 rgba(165,103,15,0)}
+}
+
+/* ---------- steps ---------- */
+.steps{margin-bottom:clamp(22px,3.6vw,32px)}
+.step-head,.step{display:grid;grid-template-columns:2.4rem minmax(0,1fr) 8.4rem 8.4rem;
+  gap:.6rem;align-items:center}
+.step-head{font-family:var(--sans);font-size:11.5px;font-weight:700;letter-spacing:.1em;color:var(--ink);
+  padding:.5rem .35rem;background:#DFE6DA;border-bottom:1px solid var(--ink);
+  border-top:1px solid var(--rule)}
+.step-list{list-style:none;margin:0;padding:0}
+.step{border-bottom:1px solid var(--rule-soft);padding:.72rem .2rem;
+  opacity:0;transform:translateY(5px);transition:opacity .32s ease,transform .32s ease,background .2s}
+.step.shown{opacity:1;transform:none}
+.step.shown.current{background:linear-gradient(90deg,var(--green-soft),transparent 78%)}
+.step .idx{font-family:var(--mono);font-size:12px;color:var(--muted);display:flex;
+  align-items:center;gap:.4rem}
+.step.shown.current .idx{color:var(--green-deep);font-weight:600}
+.step .idx b{font-weight:600;font-size:13px;color:var(--ink2)}
+.step.shown.current .idx b{color:var(--green-deep)}
+.step .calc{font-family:var(--mono);font-size:14.5px;color:var(--ink2);letter-spacing:.01em;
+  white-space:nowrap;overflow-x:auto;padding-bottom:1px}
+.step .calc em{font-style:normal;color:var(--ink);font-weight:600;font-size:15px}
+.step .calc .op{color:var(--muted);padding:0 .18em}
+.step .calc i{font-style:normal;color:var(--amber);font-weight:600}
+.bitcell{display:flex;align-items:center;gap:.45rem}
+.bitcell .lb,.remcell .lb{font-family:var(--sans);font-size:9.5px;color:var(--muted);letter-spacing:.04em;
+  display:none}
+.pill{width:1.72rem;height:1.72rem;display:grid;place-items:center;border-radius:2px;
+  font-family:var(--mono);font-size:13px;font-weight:600}
+.pill.one{background:var(--green);color:#fff;box-shadow:0 0 0 1px var(--green-deep) inset}
+.pill.zero{background:#fff;color:var(--ink2);border:1px solid var(--rule)}
+.remcell{font-family:var(--mono);font-size:14px;color:var(--amber);font-weight:600}
+.remcell .zero{color:var(--green);font-weight:600}
+.remcell .endtag{font-family:var(--sans);font-size:11px;color:var(--green);margin-left:.35rem;
+  border:1px solid var(--green);border-radius:2px;padding:0 .3rem}
+.hintline{margin:.75rem 0 0;font-size:12.5px;color:var(--muted)}
+.hintline b{color:var(--green-deep);font-weight:600}
+
+/* ---------- result ---------- */
+.result{margin:clamp(24px,4vw,34px) 0 clamp(26px,4vw,40px);padding:clamp(18px,2.6vw,26px);
+  background:var(--ink);color:#EFF3EE;border-radius:2px;position:relative}
+.result[hidden]{display:none}
+.r-top{display:flex;flex-wrap:wrap;align-items:center;gap:.7rem;margin-bottom:.9rem}
+.badge{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;padding:.2rem .5rem;
+  border:1px solid rgba(255,255,255,.4);border-radius:2px;color:#EFF3EE}
+.badge[data-kind="ok"]{background:var(--green);border-color:var(--green)}
+.badge[data-kind="cyc"]{background:var(--amber);border-color:var(--amber);color:#1A1006}
+.badge[data-kind="cut"]{background:transparent;border-color:var(--amber);color:#F0C88A}
+.eq{margin:0 0 .7rem;font-family:var(--mono);font-size:clamp(19px,3vw,27px);letter-spacing:.02em;
+  line-height:1.5;word-break:break-all;color:#fff}
+.eq sub{font-size:.58em;letter-spacing:0}
+.eq .ov{text-decoration:overline;text-decoration-thickness:1px;color:#9FE0C9}
+.eq .dots{color:var(--muted)}
+.r-check{margin:0;font-family:var(--mono);font-size:13px;color:#C6D2CB;line-height:1.9;word-break:break-word}
+.r-check b{color:#fff;font-weight:600}
+.r-note{margin:.75rem 0 0;font-size:13px;color:#C6D2CB;line-height:1.8;
+  border-top:1px solid rgba(255,255,255,.16);padding-top:.7rem}
+.r-note .k{color:#9FE0C9;font-family:var(--mono);font-weight:600}
+
+/* ---------- controls ---------- */
+.controls{position:sticky;bottom:0;z-index:5;display:flex;flex-wrap:wrap;align-items:center;
+  gap:.5rem;padding:.75rem 0;margin-top:1rem;
+  background:rgba(237,239,234,.95);backdrop-filter:blur(6px);
+  border-top:1px solid var(--ink)}
+.btn{font-family:var(--sans);font-size:13.5px;font-weight:500;padding:.55rem 1.05rem;border-radius:2px;
+  border:1px solid var(--ink);background:transparent;color:var(--ink);cursor:pointer;
+  transition:.15s;display:inline-flex;align-items:center;gap:.4rem;letter-spacing:.02em}
+.btn:hover:not(:disabled){background:var(--ink);color:#fff}
+.btn.primary{background:var(--green);border-color:var(--green-deep);color:#fff;padding:.55rem 1.5rem}
+.btn.primary:hover:not(:disabled){background:var(--green-deep)}
+.btn:disabled{opacity:.32;cursor:not-allowed}
+.btn:focus-visible{outline:2px solid var(--green);outline-offset:2px}
+.btn .kbd{font-family:var(--mono);font-size:10px;opacity:.6}
+.spacer{flex:1 1 auto}
+.counter{font-family:var(--mono);font-size:12px;color:var(--ink2);letter-spacing:.06em;
+  min-width:7.5rem;text-align:right}
+#play.on{background:var(--amber-soft);border-color:var(--amber);color:#5C3B08}
+
+/* ---------- colophon ---------- */
+.colophon{margin-top:clamp(28px,4vw,44px);padding-top:1.4rem;border-top:1px solid var(--rule)}
+.colophon h2{font-family:var(--disp);font-size:14px;font-weight:700;letter-spacing:.04em;margin:0 0 .8rem}
+.recap{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border:1px solid var(--rule);
+  background:var(--card)}
+.recap div{padding:.9rem 1rem;border-right:1px solid var(--rule)}
+.recap div:last-child{border-right:0}
+.recap .n{font-family:var(--mono);font-size:10.5px;color:var(--green);letter-spacing:.16em;display:block;margin-bottom:.2rem}
+.recap p{margin:0;font-size:13px;line-height:1.7;color:var(--ink2)}
+.recap strong{color:var(--ink);font-weight:600}
+.foot-note{margin:1.1rem 0 0;font-size:12px;color:var(--muted);line-height:1.85}
+.foot-note code{font-family:var(--mono);font-size:11.5px;background:#E3E7DF;padding:.05rem .3rem;border-radius:2px}
+
+@media (max-width:720px){
+  .step-head{display:none}
+  .step{grid-template-columns:1.9rem minmax(0,1fr);grid-template-areas:"idx calc" ". bitrem";
+    row-gap:.4rem;align-items:start}
+  .step .idx{grid-area:idx;padding-top:.15rem}
+  .step .calc{grid-area:calc;font-size:13.5px}
+  .step .bitcell{grid-area:bitrem;display:inline-flex}
+  .step .remcell{display:inline-flex;align-items:center;gap:.35rem;margin-left:.7rem}
+  .step .bitcell,.step .remcell{grid-row:2}
+  .step .bitcell{grid-column:2;justify-self:start}
+  .step .remcell{grid-column:2;justify-self:start;margin-left:6.2rem}
+  .tape-lead{font-size:1.2rem;height:2.5rem}
+  .cell,.cell .box{width:2.05rem}
+  .cell .box{height:2.4rem;font-size:1rem}
+  .cell .w{font-size:9px}
+  .recap{grid-template-columns:1fr}
+  .recap div{border-right:0;border-bottom:1px solid var(--rule)}
+  .recap div:last-child{border-bottom:0}
+  .controls{gap:.4rem}
+  .btn{padding:.5rem .8rem;font-size:12.5px}
+  .counter{order:9;flex-basis:100%;text-align:left;min-width:0}
+}
+@media (prefers-reduced-motion:reduce){
+  *{transition:none!important;animation:none!important}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="masthead">
+    <div class="mast-top">
+      <span class="eyebrow">情報Ⅰ／数の表現</span>
+      <span class="tag">2進数の小数</span>
+    </div>
+    <h1>小数を2進数にする<span class="mark">2倍法</span></h1>
+    <p class="lede">小数部分を2倍し、整数部を1桁として取り出す。整数部は消して、残った小数部分をまた2倍する。この繰り返しだけで10進小数は2進小数になります。下の「次へ」で1行ずつ進めて、どこが<strong>桁</strong>でどこが<strong>次の行へ送る数</strong>かを見分けてください。</p>
+  </header>
+
+  <section class="input-panel panel" aria-label="変換する数の入力">
+    <div class="field">
+      <label class="field-label" for="digits">10進数の小数（0以上1未満）</label>
+      <div class="value-field">
+        <span class="dec">0.</span>
+        <input id="digits" type="text" inputmode="numeric" value="625" maxlength="10" spellcheck="false" autocomplete="off" aria-describedby="errMsg">
+      </div>
+      <div class="field-sub">
+        <div class="presets">
+          <span class="lb">例</span>
+          <button class="chip" type="button" data-v="625">0.625</button>
+          <button class="chip" type="button" data-v="6875">0.6875</button>
+          <button class="chip" type="button" data-v="75">0.75</button>
+          <button class="chip" type="button" data-v="1">0.1</button>
+          <button class="chip" type="button" data-v="2">0.2</button>
+          <button class="chip" type="button" data-v="3">0.3</button>
+        </div>
+      </div>
+    </div>
+    <div class="field">
+      <label class="field-label" for="maxBits">最大桁数（終わらない数の打ち切り）</label>
+      <select id="maxBits">
+        <option value="8">8桁</option>
+        <option value="12" selected>12桁</option>
+        <option value="16">16桁</option>
+      </select>
+    </div>
+    <p class="err" id="errMsg" role="alert"></p>
+  </section>
+
+  <section class="stage" aria-label="出力されるビット">
+    <h2 class="sec-title">出力されるビット<span class="aside" id="status" aria-live="polite">0 / 0 行</span></h2>
+    <div class="tape">
+      <div class="tape-lead">0.</div>
+      <ol class="bits" id="bits"></ol>
+    </div>
+    <div class="aha" id="aha" hidden aria-live="polite">
+      <span class="aha-tag">気づき</span>
+      <p class="aha-text" id="ahaText"></p>
+    </div>
+    <p class="tape-note" id="tapeNote">マスの下の数字は、その位の重み（1/2、1/4、1/8 …）。</p>
+  </section>
+
+  <section class="steps" aria-label="計算の各ステップ">
+    <h2 class="sec-title">計算<span class="aside">×2 → 整数部を取る → 小数部を残す</span></h2>
+    <div class="step-head" id="stepHead">
+      <span>回</span><span>計算</span><span>整数部＝ビット</span><span>残る小数部</span>
+    </div>
+    <ol class="step-list" id="steps"></ol>
+    <p class="hintline" id="hintline"><b>整数部</b>は2進数の1桁として取り出します。<b>整数部を除いた小数部</b>が、次の行で2倍する数になります。</p>
+  </section>
+
+  <section class="result" id="result" hidden aria-live="polite">
+    <div class="r-top"><span class="badge" id="rBadge">—</span></div>
+    <p class="eq" id="rEq"></p>
+    <p class="r-check" id="rCheck"></p>
+    <p class="r-note" id="rNote"></p>
+  </section>
+
+  <nav class="controls" aria-label="ステップ操作">
+    <button class="btn" id="prev" type="button">← 戻る</button>
+    <button class="btn primary" id="next" type="button">次へ →</button>
+    <button class="btn" id="all" type="button">すべて表示</button>
+    <button class="btn" id="reset" type="button">最初から</button>
+    <button class="btn" id="play" type="button">自動再生</button>
+    <select id="speed" aria-label="自動再生の速度">
+      <option value="1700">ゆっくり</option>
+      <option value="1000" selected>ふつう</option>
+      <option value="520">はやい</option>
+    </select>
+    <span class="spacer"></span>
+    <span class="counter" id="counter">0 / 0</span>
+  </nav>
+
+  <footer class="colophon">
+    <h2>この単元の要点</h2>
+    <div class="recap">
+      <div><span class="n">STEP 1</span><p><strong>小数部分を2倍する。</strong>0.625 → 1.25</p></div>
+      <div><span class="n">STEP 2</span><p><strong>整数部を1桁として書き出す。</strong>1.25 → <strong>1</strong>（2進小数第1位）</p></div>
+      <div><span class="n">STEP 3</span><p><strong>小数部だけを残して繰り返す。</strong>0.25 を次の行へ。0 になったら終了。</p></div>
+    </div>
+    <p class="foot-note">キーボード：<code>→</code> / <code>Space</code> で次へ、<code>←</code> で戻る。<br>
+    既約分数にしたとき分母が2の累乗（2, 4, 8, 16 …）だけなら、2進小数は有限桁で終わります。分母に5が入る数（0.1、0.2、0.3 …）は終わりません。</p>
+  </footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var $ = function(id){ return document.getElementById(id); };
+  var input      = $("digits"),
+      maxBitsSel = $("maxBits"),
+      stepsOl    = $("steps"),
+      bitsOl     = $("bits"),
+      statusEl   = $("status"),
+      counterEl  = $("counter"),
+      resultEl   = $("result"),
+      errEl      = $("errMsg"),
+      hintEl     = $("hintline"),
+      btnPrev    = $("prev"),
+      btnNext    = $("next"),
+      btnAll     = $("all"),
+      btnReset   = $("reset"),
+      btnPlay    = $("play"),
+      speedSel   = $("speed");
+
+  var S = {
+    N: 0n, D: 1n, scale: 0,
+    steps: [], bits: [], rep: [], total: 0,
+    visible: 0, terminated: false, cycleStart: -1,
+    auto: false, timer: null, valid: false, digits: "", flashed: false
+  };
+
+  /* -------- 数値ユーティリティ（誤差を出さないため BigInt で厳密計算） -------- */
+  function parseDigits(raw){
+    var s = String(raw).trim()
+      .replace(/[０-９]/g, function(c){ return String.fromCharCode(c.charCodeAt(0) - 0xFEE0); })
+      .replace(/．/g, ".").replace(/\s+/g, "");
+    if (s.indexOf("0.") === 0) s = s.slice(2);
+    else if (s.charAt(0) === ".") s = s.slice(1);
+    if (s === "") return { error: "小数点以下の数字を入れてください（例：625）。" };
+    if (!/^\d+$/.test(s)) return { error: "半角の数字だけを入れてください（例：625）。" };
+    if (s.length > 9) return { error: "小数第9位までにしてください。" };
+    var N = BigInt(s);
+    if (N === 0n) return { error: "0 以外の小数を入れてください。" };
+    return { N: N, D: 10n ** BigInt(s.length), scale: s.length, digits: s };
+  }
+
+  /* n/D (D=10^scale) を小数の文字列に */
+  function fmtFrac(n, D, scale){
+    var s = n.toString();
+    while (s.length < scale + 1) s = "0" + s;
+    var ip = s.slice(0, s.length - scale);
+    var fp = s.slice(s.length - scale).replace(/0+$/, "");
+    return fp ? ip + "." + fp : ip;
+  }
+
+  /* 任意の分数を小数文字列へ（分母が 2^k・10^k の積なので必ず有限で終わる） */
+  function dec(num, den, maxDigits){
+    var ip = num / den, rem = num % den, out = ip.toString();
+    if (rem === 0n) return out;
+    out += ".";
+    for (var i = 0; i < maxDigits && rem !== 0n; i++){
+      rem *= 10n;
+      out += (rem / den).toString();
+      rem %= den;
+    }
+    return out;
+  }
+
+  /* -------- 2倍法そのもの -------- */
+  function compute(N, D, maxBits){
+    var steps = [], seen = {}, n = N, i, terminated = false, cycleStart = -1;
+    for (i = 0; i < maxBits; i++){
+      if (n === 0n){ terminated = true; break; }
+      var key = n.toString();
+      if (Object.prototype.hasOwnProperty.call(seen, key)){ cycleStart = seen[key]; break; }
+      seen[key] = i;
+      var dbl = n * 2n;
+      var bit = dbl >= D ? 1 : 0;
+      var rem = dbl - BigInt(bit) * D;
+      steps.push({ n: n, dbl: dbl, bit: bit, rem: rem });
+      n = rem;
+    }
+    if (n === 0n) terminated = true;
+    var bits = steps.map(function(s){ return s.bit; });
+    return { steps: steps, bits: bits, terminated: terminated, cycleStart: cycleStart };
+  }
+
+  /* -------- 描画 -------- */
+  function buildTape(){
+    bitsOl.innerHTML = "";
+    var frag = document.createDocumentFragment();
+    var all = S.bits.concat(S.rep);
+    for (var i = 0; i < all.length; i++){
+      var li = document.createElement("li");
+      var isRep = i >= S.bits.length;
+      li.className = "cell " + (all[i] ? "on" : "off") +
+        (S.cycleStart >= 0 && !isRep && i >= S.cycleStart ? " cyc" : "") +
+        (isRep ? " rep" : "");
+      li.innerHTML = '<div class="box">' + all[i] + '</div>' +
+                     '<div class="w">1/' + Math.pow(2, i + 1) + '</div>';
+      frag.appendChild(li);
+    }
+    bitsOl.appendChild(frag);
+  }
+
+  function buildSteps(){
+    stepsOl.innerHTML = "";
+    var scale = S.scale, D = S.D, frag = document.createDocumentFragment();
+    S.steps.forEach(function(st, i){
+      var li = document.createElement("li");
+      li.className = "step";
+      var remTxt = st.rem === 0n
+        ? '<span class="zero">0</span><span class="endtag">終了</span>'
+        : fmtFrac(st.rem, D, scale);
+      li.innerHTML =
+        '<span class="idx"><b>' + (i + 1) + '</b></span>' +
+        '<span class="calc">' +
+          fmtFrac(st.n, D, scale) + '<span class="op">× 2 =</span><em>' +
+          fmtFrac(st.dbl, D, scale) + '</em>' +
+        '</span>' +
+        '<span class="bitcell"><span class="pill ' + (st.bit ? "one" : "zero") + '">' + st.bit + '</span></span>' +
+        '<span class="remcell">' + remTxt + '</span>';
+      frag.appendChild(li);
+    });
+    stepsOl.appendChild(frag);
+  }
+
+  function buildResult(){
+    var bitsStr = S.bits.join(""),
+        len = S.bits.length,
+        badge = $("rBadge"), eq = $("rEq"), check = $("rCheck"), note = $("rNote"),
+        exact = fmtFrac(S.N, S.D, S.scale),
+        rhs, kind, noteHtml, cycLen;
+
+    if (S.terminated){
+      kind = "ok";
+      badge.textContent = "有限小数・" + len + "桁で確定";
+      rhs = "0." + bitsStr;
+    } else if (S.cycleStart >= 0){
+      kind = "cyc";
+      cycLen = len - S.cycleStart;
+      badge.textContent = "循環小数・" + cycLen + "桁の繰り返し";
+      rhs = "0." + bitsStr.slice(0, S.cycleStart).replace(/^$/, "") +
+            '<span class="ov">' + bitsStr.slice(S.cycleStart) + '</span><span class="dots">…</span>';
+    } else {
+      kind = "cut";
+      badge.textContent = "有限小数にならない・" + len + "桁で打ち切り";
+      rhs = "0." + bitsStr + '<span class="dots">…</span>';
+    }
+    badge.setAttribute("data-kind", kind);
+
+    eq.innerHTML = exact + "<sub>10</sub> " + (S.terminated ? "=" : "≈") + " " + rhs + "<sub>2</sub>";
+
+    /* 検算：1の位の重みを足す */
+    var num = 0n, terms = [];
+    for (var i = 0; i < len; i++){
+      if (S.bits[i]){
+        num += 1n << BigInt(len - 1 - i);
+        terms.push("1/" + Math.pow(2, i + 1));
+      }
+    }
+    var den = 1n << BigInt(len);
+    var valStr = dec(num, den, 24);
+    var checkTxt = terms.length ? terms.join(" + ") : "0";
+    check.innerHTML = "検算　" + checkTxt + " = <b>" + valStr + "</b>" +
+      (S.terminated ? "" : "　<span style=\"opacity:.75\">（打ち切った桁までの和）</span>");
+
+    /* 説明 */
+    if (S.terminated){
+      noteHtml = "<span class=\"k\">" + len + "回目</span>で小数部が 0 になりました。ここで終わりなので、2進数でも " +
+                 len + " 桁の有限小数で正確に表せます。";
+    } else if (S.cycleStart >= 0){
+      var back = fmtFrac(S.steps[S.cycleStart].n, S.D, S.scale);
+      noteHtml = "<span class=\"k\">" + len + "行目</span>の計算で残った小数部 <b>" + back +
+                 "</b> は、" + (S.cycleStart + 1) + "行目の計算前と同じ値です。ここで計算が一周したので、" +
+                 "2進小数第" + (S.cycleStart + 1) + "位からの " + cycLen + " 桁 " +
+                 "<b>" + bitsStr.slice(S.cycleStart) + "</b> が永久に繰り返します（オレンジの枠）。";
+    } else {
+      noteHtml = "小数部が 0 にならないため、" + len + " 桁で打ち切りました。打ち切った値と真の値の差は " +
+                 "<b>" + dec(S.N * den - num * S.D, S.D * den, 28) + "</b> です。桁を増やすほど差は小さくなりますが、0 にはなりません。";
+    }
+    note.innerHTML = noteHtml;
+
+    var tn = $("tapeNote");
+    if (S.terminated){
+      tn.textContent = "マスの下の数字は、その位の重み（1/2、1/4、1/8 …）。小数部が 0 になったので、ここで終わりです。";
+    } else if (S.cycleStart >= 0){
+      var cyc = S.bits.slice(S.cycleStart).join("");
+      var pre;
+      if (S.cycleStart === 0){
+        pre = "小数第1位から循環が始まります。";
+      } else if (S.cycleStart === 1){
+        pre = "小数第1位の「" + S.bits[0] + "」は循環しない部分。";
+      } else {
+        pre = "小数第1位〜第" + S.cycleStart + "位の「" + S.bits.slice(0, S.cycleStart).join("") + "」は循環しない部分。";
+      }
+      tn.textContent = "オレンジの枠＝循環節（小数第" + (S.cycleStart + 1) + "位〜第" + S.bits.length +
+        "位の「" + cyc + "」）。" + pre + "点線のマスは、その続きをもう一度並べたものです。";
+
+      var from = (S.cycleStart === 0)
+        ? "小数第1位から"
+        : "小数第" + (S.cycleStart + 1) + "位から";
+      $("ahaText").innerHTML =
+        "点線のマスに、オレンジで囲んだ <span class=\"grp\">" + cyc + "</span> が" +
+        "もう一度あらわれた<span class=\"arrow\">→</span>同じ <b>" + cyc.length +
+        "桁</b>のくり返し。" + from + "は、この " + cyc.length + " 桁を繰り返せばよい。";
+    } else {
+      tn.textContent = "マスの下の数字は、その位の重み（1/2、1/4、1/8 …）。この桁数では終わりませんでした。";
+    }
+  }
+
+  function apply(){
+    var total = S.total, i, repFrom = S.bits.length, done = (total > 0 && S.visible >= total);
+    var cells = bitsOl.children, rows = stepsOl.children;
+    for (i = 0; i < cells.length; i++){
+      cells[i].classList.toggle("shown", i < S.visible || (i >= repFrom && done));
+    }
+    for (i = 0; i < rows.length; i++){
+      rows[i].classList.toggle("shown", i < S.visible);
+      rows[i].classList.toggle("current", i === S.visible - 1);
+    }
+    var txt = S.visible + " / " + total;
+    statusEl.textContent = (S.visible === 0) ? "0 / " + total + " 行" : txt + " 桁";
+    counterEl.textContent = (S.visible === 0) ? "まだ始まっていません" : "行 " + txt;
+    resultEl.hidden = !(S.visible >= total && total > 0);
+
+    /* 点線マスが出る瞬間に「気づき」を出す */
+    var aha = $("aha"), showAha = done && S.cycleStart >= 0;
+    if (showAha){
+      if (aha.hidden){
+        aha.hidden = false;
+        aha.classList.remove("in");
+        void aha.offsetWidth;
+      }
+      aha.classList.add("in");
+      if (!S.flashed){
+        S.flashed = true;
+        for (i = 0; i < S.bits.length; i++){
+          if (i >= S.cycleStart){
+            (function(node){
+              node.classList.add("flash");
+              setTimeout(function(){ node.classList.remove("flash"); }, 1000);
+            })(cells[i]);
+          }
+        }
+      }
+    } else {
+      aha.hidden = true;
+      aha.classList.remove("in");
+      if (!done) S.flashed = false;
+    }
+    btnPrev.disabled = S.visible <= 0;
+    btnNext.disabled = S.visible >= total;
+    btnAll.disabled = S.visible >= total;
+  }
+
+  function stopAuto(){
+    if (S.timer) clearInterval(S.timer);
+    S.timer = null; S.auto = false;
+    btnPlay.classList.remove("on");
+    btnPlay.textContent = "自動再生";
+  }
+
+  function startAuto(){
+    if (S.visible >= S.total) S.visible = 0;
+    S.auto = true;
+    btnPlay.classList.add("on");
+    btnPlay.textContent = "停止";
+    var tick = function(){
+      if (S.visible < S.total){
+        S.visible++;
+        apply();
+      }
+      if (S.visible >= S.total) stopAuto();
+    };
+    tick();
+    if (S.auto) S.timer = setInterval(tick, parseInt(speedSel.value, 10));
+  }
+
+  function convert(){
+    stopAuto();
+    var p = parseDigits(input.value);
+    if (p.error){
+      errEl.textContent = p.error;
+      errEl.classList.add("show");
+      S.valid = false;
+      S.total = 0; S.visible = 0;
+      stepsOl.innerHTML = ""; bitsOl.innerHTML = "";
+      statusEl.textContent = "—"; counterEl.textContent = "—";
+      resultEl.hidden = true;
+      btnPrev.disabled = btnNext.disabled = btnAll.disabled = true;
+      return;
+    }
+    errEl.classList.remove("show");
+    var maxBits = parseInt(maxBitsSel.value, 10);
+    var r = compute(p.N, p.D, maxBits);
+    S.N = p.N; S.D = p.D; S.scale = p.scale; S.digits = p.digits;
+    S.steps = r.steps; S.bits = r.bits; S.total = r.steps.length;
+    S.terminated = r.terminated; S.cycleStart = r.cycleStart;
+    S.rep = (r.cycleStart >= 0) ? r.bits.slice(r.cycleStart) : [];
+    S.flashed = false;
+    $("aha").hidden = true; $("aha").classList.remove("in");
+    S.visible = 0; S.valid = true;
+    buildTape();
+    buildSteps();
+    buildResult();
+    if (location.hash.indexOf("all") >= 0) S.visible = S.total;
+    apply();
+  }
+
+  function step(d){
+    stopAuto();
+    var v = S.visible + d;
+    if (v < 0) v = 0;
+    if (v > S.total) v = S.total;
+    S.visible = v;
+    apply();
+  }
+
+  /* -------- イベント -------- */
+  btnNext.addEventListener("click", function(){ step(1); });
+  btnPrev.addEventListener("click", function(){ step(-1); });
+  btnAll.addEventListener("click", function(){ stopAuto(); S.visible = S.total; apply(); });
+  btnReset.addEventListener("click", function(){ stopAuto(); S.visible = 0; apply(); });
+  btnPlay.addEventListener("click", function(){
+    if (S.auto) stopAuto(); else startAuto();
+  });
+  speedSel.addEventListener("change", function(){
+    if (S.auto){ stopAuto(); startAuto(); }
+  });
+  maxBitsSel.addEventListener("change", convert);
+
+  var t = null;
+  input.addEventListener("input", function(){
+    if (t) clearTimeout(t);
+    t = setTimeout(convert, 260);
+  });
+  input.addEventListener("keydown", function(e){
+    if (e.key === "Enter"){ e.preventDefault(); convert(); step(1); }
+  });
+
+  Array.prototype.forEach.call(document.querySelectorAll(".chip"), function(btn){
+    btn.addEventListener("click", function(){
+      input.value = btn.getAttribute("data-v");
+      convert(); step(1);
+    });
+  });
+
+  document.addEventListener("keydown", function(e){
+    var tag = (e.target && e.target.tagName) || "";
+    if (tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA") return;
+    if (e.key === "ArrowRight" || e.key === " " || e.key === "PageDown"){
+      e.preventDefault(); step(1);
+    } else if (e.key === "ArrowLeft" || e.key === "PageUp"){
+      e.preventDefault(); step(-1);
+    } else if (e.key === "Home"){ e.preventDefault(); stopAuto(); S.visible = 0; apply(); }
+    else if (e.key === "End"){ e.preventDefault(); stopAuto(); S.visible = S.total; apply(); }
+  });
+
+  convert();
+})();
+</script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
+</body>
+</html>
